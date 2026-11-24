@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>시우 저녁 뭐 먹지?</title>
+<style>
+  :root{
+    --bg:#fff8ef; --card:#ffffff; --ink:#3b2f2a; --sub:#8a7a70; --line:#f0e2d2;
+    --accent:#ff7a45; --accent2:#ffb347; --sat:#3d7be0; --sun:#e0473d;
+    --c-bowl:#f4a259; --c-pot:#c4793c; --c-pasta:#e9c46a; --c-tteok:#e76f51; --c-kimbap:#5fa86b;
+    --c-lunch:#7aa7d9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+       background:var(--bg);color:var(--ink);min-height:100vh;padding:16px 12px 40px;
+       background-image:radial-gradient(circle at 10% 0%,#ffe7cf 0,transparent 40%),radial-gradient(circle at 100% 30%,#ffeedd 0,transparent 35%)}
+  .wrap{max-width:1080px;margin:0 auto}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  h1{font-size:26px;letter-spacing:-0.5px}
+  h1 small{display:block;font-size:13px;color:var(--sub);font-weight:500;margin-top:4px;letter-spacing:0}
+  .home{color:var(--sub);text-decoration:none;font-size:14px;background:#fff;border:1px solid var(--line);padding:6px 12px;border-radius:999px}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  .roll{font-size:20px;font-weight:800;color:#fff;border:none;border-radius:18px;padding:14px 26px;cursor:pointer;
+        background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 6px 0 #d85a28,0 10px 20px rgba(255,122,69,.3);
+        transition:transform .08s, box-shadow .08s}
+  .roll:active{transform:translateY(4px);box-shadow:0 2px 0 #d85a28}
+  .roll:disabled{opacity:.6;cursor:default}
+  .roll .dice{display:inline-block}
+  .roll.spinning .dice{animation:spin .5s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .ghost{font-size:14px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:10px 14px;border-radius:12px;cursor:pointer}
+  .range{font-size:14px;color:var(--sub);margin-left:auto}
+
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .chip{font-size:13px;padding:4px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;gap:6px}
+  .chip i{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .chip b{font-weight:800}
+
+  /* 달력 */
+  .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+  .dow{text-align:center;font-size:13px;font-weight:700;color:var(--sub);padding:4px 0}
+  .dow.sun{color:var(--sun)} .dow.sat{color:var(--sat)}
+  .cell{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 10px 8px;min-height:150px;
+        display:flex;flex-direction:column;gap:6px;position:relative;box-shadow:0 2px 6px rgba(120,80,40,.06)}
+  .cell.empty{background:transparent;border:1px dashed #ecdccb;box-shadow:none}
+  .cell.weekend{background:#fffdf8}
+  .cell.today{outline:3px solid var(--accent);outline-offset:-1px}
+  .date{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700}
+  .date .d{font-size:16px}
+  .date.sun{color:var(--sun)} .date.sat{color:var(--sat)}
+  .tag-today{font-size:11px;background:var(--accent);color:#fff;border-radius:999px;padding:1px 7px;margin-left:4px}
+  .slot{border-radius:12px;padding:8px;background:#fdf6ee;display:flex;flex-direction:column;gap:3px;position:relative;overflow:hidden}
+  .slot .cat{font-size:11px;font-weight:700;color:#fff;padding:1px 7px;border-radius:999px;align-self:flex-start}
+  .slot .name{font-size:15px;font-weight:800;line-height:1.25;word-break:keep-all;min-height:38px;display:flex;align-items:center}
+  .slot .meta{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub)}
+  .slot.lunch{background:#eef4fb}
+  .slot.lunch .name{font-size:13px;min-height:auto}
+  .slot .label{font-size:11px;font-weight:700;color:var(--sub)}
+  .slot.spin .name{color:#b9a89a;filter:blur(.4px);white-space:nowrap;overflow:hidden}
+  .slot.spin .cat,.slot.spin .meta>span:first-child{visibility:hidden}
+  .slot.pop{animation:pop .35s ease}
+  @keyframes pop{0%{transform:scale(.9)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+  .btns{display:flex;gap:4px}
+  .btns button{border:none;background:#fff;border:1px solid var(--line);border-radius:8px;font-size:13px;width:28px;height:26px;cursor:pointer}
+  .btns button.on{background:#ffe2d3;border-color:var(--accent)}
+  .slot.locked{box-shadow:inset 0 0 0 2px var(--accent)}
+
+  .summary{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+  .summary h2{font-size:15px;margin-bottom:8px}
+  .summary .rows{display:flex;flex-wrap:wrap;gap:8px}
+  .hint{font-size:12px;color:var(--sub);margin-top:10px;line-height:1.6}
+
+  /* ===== 엄마 캐릭터 ===== */
+  .stage{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+  .mom{width:150px;height:188px;flex:none;position:relative}
+  .mom svg{width:100%;height:100%;overflow:visible}
+  .mom .st{display:none}
+  .mom.idle .s-idle,.mom.hope .s-hope,.mom.shock .s-shock{display:inline}
+  .mom .body{transform-origin:80px 200px}
+  .mom.idle .body{animation:breathe 3s ease-in-out infinite}
+  .mom.hope .body{animation:bob .45s ease-in-out infinite}
+  .mom.shock .body{animation:jump .35s ease-out, shake .12s linear .35s 10, slump 1.2s ease-in-out 1.6s infinite}
+  @keyframes breathe{50%{transform:translateY(2px) scaleY(.99)}}
+  @keyframes bob{50%{transform:translateY(-6px)}}
+  @keyframes jump{0%{transform:translateY(0)}40%{transform:translateY(-22px)}100%{transform:translateY(0)}}
+  @keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+  @keyframes slump{50%{transform:translateY(3px) rotate(-1.5deg)}}
+  .mom .sparkle{animation:twinkle .6s ease-in-out infinite}
+  .mom .sparkle:nth-child(2){animation-delay:.3s}
+  @keyframes twinkle{50%{opacity:.2;transform:scale(.6)}}
+  .mom .sparkle{transform-box:fill-box;transform-origin:center}
+  .mom .drop{animation:drip 1.1s ease-in infinite;transform-box:fill-box}
+  .mom .drop:nth-of-type(2){animation-delay:.4s}.mom .drop:nth-of-type(3){animation-delay:.75s}
+  @keyframes drip{0%{transform:translateY(-4px);opacity:0}20%{opacity:1}100%{transform:translateY(22px);opacity:0}}
+  .bubble{position:relative;background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px 16px;
+          font-size:17px;font-weight:800;line-height:1.4;max-width:320px;box-shadow:0 3px 8px rgba(120,80,40,.08);word-break:keep-all}
+  .bubble:before{content:"";position:absolute;left:-11px;top:50%;margin-top:-9px;border:9px solid transparent;border-right-color:var(--line);border-left:0}
+  .bubble:after{content:"";position:absolute;left:-7px;top:50%;margin-top:-7px;border:7px solid transparent;border-right-color:#fff;border-left:0}
+  .bubble.pop{animation:pop .3s ease}
+  @media (max-width:720px){ .mom{width:104px;height:130px} .bubble{font-size:15px;padding:10px 12px} }
+
+  /* ===== 카피바라 ===== */
+  .capy-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;margin-left:10px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+  .capy{width:150px;height:128px}
+  .capy svg{width:100%;height:100%;overflow:visible}
+  .capy .cst{display:none}
+  .capy.idle .c-idle,.capy.hope .c-hope,.capy.chill .c-chill{display:inline}
+  .capy .cbody{transform-origin:70px 118px}
+  .capy.idle .cbody{animation:csway 4s ease-in-out infinite}
+  .capy.hope .cbody{animation:cbounce .3s ease-in-out infinite}
+  .capy.chill .cbody{animation:csway 2.5s ease-in-out infinite}
+  .capy.poke .cbody{animation:csquish .35s ease}
+  @keyframes csway{50%{transform:rotate(1.5deg)}}
+  @keyframes cbounce{50%{transform:translateY(-10px) scaleY(1.03)}}
+  @keyframes csquish{30%{transform:scale(1.12,.85)}65%{transform:scale(.94,1.08)}}
+  .capy .snout{transform-box:fill-box;transform-origin:top center}
+  .capy.chill .snout{animation:chew .35s ease-in-out infinite}
+  @keyframes chew{50%{transform:scaleY(.88)}}
+  .capy .yuzu{transform-box:fill-box;transform-origin:bottom center}
+  .capy.hope .yuzu{animation:yuzuhop .3s ease-in-out infinite}
+  @keyframes yuzuhop{50%{transform:translateY(-7px) rotate(12deg)}}
+  .capy .heart{animation:float 1.6s ease-out infinite;transform-box:fill-box}
+  .capy .heart:nth-of-type(2){animation-delay:.8s}
+  @keyframes float{0%{transform:translateY(6px);opacity:0}30%{opacity:1}100%{transform:translateY(-22px);opacity:0}}
+  .capy .zz{animation:float 2.4s ease-out infinite;transform-box:fill-box}
+  .capy .drool{animation:drool 1s ease-in infinite;transform-box:fill-box;transform-origin:top center}
+  @keyframes drool{0%{transform:scaleY(.3)}70%{transform:scaleY(1.2)}100%{transform:scaleY(.3)}}
+  .cbubble{background:#fff7e6;border:2px solid #f2d6a2;border-radius:14px;padding:6px 12px;font-size:14px;font-weight:800;white-space:nowrap;position:relative}
+  .cbubble:after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-7px;border:7px solid transparent;border-top-color:#f2d6a2;border-bottom:0}
+  .cbubble.pop{animation:pop .3s ease}
+  @media (max-width:720px){ .stage{gap:6px} .mom{width:88px;height:110px} .bubble{flex:1;min-width:0;font-size:13px;padding:8px 10px} .capy-wrap{margin-left:0;flex:none} .capy{width:84px;height:72px} .cbubble{font-size:11px;padding:4px 8px;white-space:normal;max-width:96px;text-align:center} }
+
+  /* 모바일: 리스트형 */
+  @media (max-width:720px){
+    h1{font-size:22px}
+    .range{margin-left:0;width:100%}
+    .cal{grid-template-columns:1fr}
+    .dow,.cell.empty{display:none}
+    .cell{min-height:auto;flex-direction:row;align-items:stretch;flex-wrap:wrap}
+    .cell .date{width:56px;flex-direction:column;justify-content:center;gap:2px}
+    .cell .slots{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+    .slot .name{min-height:auto}
+  }
+  @media (min-width:721px){ .cell .slots{display:flex;flex-direction:column;gap:6px;flex:1} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🍽️ 시우 저녁 뭐 먹지?<small>주사위를 굴리면 2주치 메뉴가 촤라라락!</small></h1>
+    <a class="home" href="https://didimlike365.github.io/">🏠 시우 놀이터</a>
+  </header>
+
+  <div class="stage">
+    <div class="mom idle" id="mom" aria-hidden="true">
+      <svg viewBox="0 0 160 200">
+        <g class="body">
+          <!-- 뒷머리·똥머리 -->
+          <circle cx="80" cy="24" r="16" fill="#5a3a2a"/>
+          <ellipse cx="80" cy="70" rx="45" ry="46" fill="#5a3a2a"/>
+          <!-- 몸·앞치마 -->
+          <path d="M36 200 L46 130 Q80 112 114 130 L124 200 Z" fill="#ff9f7a"/>
+          <path d="M60 200 L63 142 L97 142 L100 200 Z" fill="#fff" stroke="#f3cdb8" stroke-width="2"/>
+          <path d="M63 142 L66 122 M97 142 L94 122" stroke="#f3cdb8" stroke-width="3"/>
+          <circle cx="80" cy="168" r="6" fill="#ffd27a"/>
+          <rect x="72" y="104" width="16" height="16" rx="5" fill="#ffd9bf"/>
+          <!-- 얼굴 -->
+          <circle cx="80" cy="72" r="37" fill="#ffe0c7"/>
+          <path d="M42 70 Q42 32 80 32 Q118 32 118 70 Q104 50 86 52 Q84 44 76 52 Q56 50 42 70 Z" fill="#5a3a2a"/>
+          <circle cx="58" cy="86" r="6" fill="#ffb3b3" opacity=".7"/>
+          <circle cx="102" cy="86" r="6" fill="#ffb3b3" opacity=".7"/>
+
+          <!-- 기본: 뭐 하지~ 고민 -->
+          <g class="st s-idle">
+            <path d="M60 62 L71 60 M89 60 L100 63" stroke="#5a3a2a" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="66" cy="73" r="4" fill="#3b2f2a"/><circle cx="94" cy="73" r="4" fill="#3b2f2a"/>
+            <path d="M73 92 Q80 95 87 91" stroke="#b5544b" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M48 134 Q40 155 42 176" stroke="#ff9f7a" stroke-width="13" fill="none" stroke-linecap="round"/>
+            <circle cx="42" cy="180" r="7" fill="#ffd9bf"/>
+            <path d="M112 134 Q124 116 98 104" stroke="#ff9f7a" stroke-width="13" fill="none" stroke-linecap="round"/>
+            <circle cx="95" cy="102" r="7.5" fill="#ffd9bf"/>
+          </g>
+
+          <!-- 주사위 굴리는 중: 두 손 모아 기대 -->
+          <g class="st s-hope">
+            <path d="M59 58 L71 55 M89 55 L101 58" stroke="#5a3a2a" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="66" cy="72" r="6.5" fill="#3b2f2a"/><circle cx="94" cy="72" r="6.5" fill="#3b2f2a"/>
+            <circle cx="68.5" cy="69.5" r="2.4" fill="#fff"/><circle cx="96.5" cy="69.5" r="2.4" fill="#fff"/>
+            <circle cx="64" cy="75" r="1.2" fill="#fff"/><circle cx="92" cy="75" r="1.2" fill="#fff"/>
+            <path d="M73 88 Q80 98 87 88 Z" fill="#c0504d"/>
+            <path d="M48 134 Q44 116 72 112" stroke="#ff9f7a" stroke-width="13" fill="none" stroke-linecap="round"/>
+            <path d="M112 134 Q116 116 88 112" stroke="#ff9f7a" stroke-width="13" fill="none" stroke-linecap="round"/>
+            <ellipse cx="80" cy="110" rx="12" ry="10" fill="#ffd9bf"/>
+            <path d="M80 101 L80 119 M75 103 L75 116 M85 103 L85 116" stroke="#e8b89a" stroke-width="1.5"/>
+            <g>
+              <path class="sparkle" d="M24 40 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z" fill="#ffc83d"/>
+              <path class="sparkle" d="M134 30 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 Z" fill="#ffc83d"/>
+              <path class="sparkle" d="M140 88 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 Z" fill="#ffb347"/>
+            </g>
+          </g>
+
+          <!-- 메뉴 확정: 기겁 + 땀 뻘뻘 -->
+          <g class="st s-shock">
+            <rect x="46" y="40" width="68" height="30" fill="#bcd3f0" opacity=".45" rx="6"/>
+            <path d="M62 44 L62 58 M72 42 L72 56 M82 42 L82 56 M92 42 L92 56 M100 44 L100 58" stroke="#7aa7d9" stroke-width="2"/>
+            <path d="M58 58 L70 62 M90 62 L102 58" stroke="#5a3a2a" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="66" cy="73" r="8" fill="#fff" stroke="#3b2f2a" stroke-width="2"/>
+            <circle cx="94" cy="73" r="8" fill="#fff" stroke="#3b2f2a" stroke-width="2"/>
+            <circle cx="66" cy="74" r="2" fill="#3b2f2a"/><circle cx="94" cy="74" r="2" fill="#3b2f2a"/>
+            <path d="M70 96 Q73 88 76 96 Q79 88 82 96 Q85 88 88 96 Q90 102 80 102 Q70 102 70 96 Z" fill="#7a3530"/>
+            <path d="M48 134 Q28 112 46 90" stroke="#ff9f7a" stroke-width="13" fill="none" stroke-linecap="round"/>
+            <circle cx="47" cy="87" r="8" fill="#ffd9bf"/>
+            <path d="M112 134 Q132 112 114 90" stroke="#ff9f7a" stroke-width="13" fill="none" stroke-linecap="round"/>
+            <circle cx="113" cy="87" r="8" fill="#ffd9bf"/>
+            <path class="drop" d="M124 46 Q130 56 124 60 Q118 56 124 46 Z" fill="#8fc3f2"/>
+            <path class="drop" d="M34 56 Q39 64 34 68 Q29 64 34 56 Z" fill="#8fc3f2"/>
+            <path class="drop" d="M118 72 Q123 80 118 84 Q113 80 118 72 Z" fill="#8fc3f2"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div class="bubble" id="bubble">오늘 저녁 뭐 하지…? 🤔</div>
+    <div class="capy-wrap" id="capyWrap" title="카피바라를 눌러보세요">
+      <div class="cbubble" id="cbubble">소세지 꿈 꾸는 중… 🌭</div>
+      <div class="capy idle" id="capy">
+        <svg viewBox="0 0 140 120">
+          <g class="cbody">
+            <!-- 몸통·다리 -->
+            <rect x="40" y="104" width="12" height="14" rx="5" fill="#8f6040"/>
+            <rect x="96" y="104" width="12" height="14" rx="5" fill="#8f6040"/>
+            <ellipse cx="78" cy="86" rx="54" ry="30" fill="#b07a4f"/>
+            <path d="M70 74 q6 4 12 0 M92 78 q6 4 12 0 M80 92 q6 4 12 0" stroke="#9a6a43" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <!-- 머리 -->
+            <rect x="14" y="36" width="70" height="50" rx="22" fill="#bd875d"/>
+            <ellipse cx="70" cy="38" rx="7" ry="5" fill="#8f6040"/>
+            <g class="snout"><rect x="8" y="54" width="40" height="30" rx="14" fill="#94643f"/></g>
+            <ellipse cx="18" cy="62" rx="3" ry="2" fill="#4a3020"/><ellipse cx="30" cy="62" rx="3" ry="2" fill="#4a3020"/>
+            <!-- 유자 -->
+            <g class="yuzu"><circle cx="50" cy="26" r="11" fill="#ffb02e"/><circle cx="46" cy="22" r="3" fill="#ffd27a"/>
+              <path d="M50 15 q6 -8 12 -4 q-6 6 -12 4 Z" fill="#5fa86b"/></g>
+
+            <!-- 기본: 평온하게 눈 감고 -->
+            <g class="cst c-idle">
+              <path d="M52 50 Q58 54 64 50" stroke="#3b2f2a" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <path d="M22 74 Q28 77 34 74" stroke="#4a3020" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <text class="zz" x="92" y="30" font-size="14" font-weight="800" fill="#b9a89a">z</text>
+            </g>
+            <!-- 주사위 중: 밥 기대, 침 질질 -->
+            <g class="cst c-hope">
+              <circle cx="58" cy="50" r="6" fill="#3b2f2a"/><circle cx="60" cy="48" r="2.2" fill="#fff"/>
+              <path d="M20 72 Q28 80 36 72 Z" fill="#c0504d"/>
+              <path class="drool" d="M30 78 q4 6 0 12 q-4 -6 0 -12 Z" fill="#a8d8ff"/>
+              <circle cx="82" cy="30" r="3" fill="#fff" stroke="#f2d6a2"/><circle cx="90" cy="20" r="4.5" fill="#fff" stroke="#f2d6a2"/><ellipse cx="114" cy="6" rx="22" ry="14" fill="#fff" stroke="#f2d6a2" stroke-width="2"/><rect x="100" y="1" width="28" height="10" rx="5" fill="#d9534f"/><path d="M106 3 l3 5 M113 3 l3 5 M120 3 l3 5" stroke="#f08a80" stroke-width="1.6" stroke-linecap="round"/>
+            </g>
+            <!-- 엄마 기겁할 때: 혼자 태평하게 냠냠 -->
+            <g class="cst c-chill">
+              <path d="M52 51 L64 51" stroke="#3b2f2a" stroke-width="3" stroke-linecap="round"/>
+              <path d="M52 47 Q58 45 64 47" stroke="#94643f" stroke-width="2" fill="none"/>
+              <g transform="rotate(-12 22 86)"><rect x="6" y="80" width="34" height="12" rx="6" fill="#d9534f"/><path d="M12 83 l4 6 M20 83 l4 6 M28 83 l4 6" stroke="#f08a80" stroke-width="2" stroke-linecap="round"/><circle cx="6" cy="86" r="2.5" fill="#b8433f"/></g>
+              <path class="heart" d="M100 30 q-5 -6 -9 -1 q-3 5 9 12 q12 -7 9 -12 q-4 -5 -9 1 Z" fill="#ff8fa3"/>
+              <path class="heart" d="M118 44 q-4 -5 -7 -1 q-2 4 7 9 q9 -5 7 -9 q-3 -4 -7 1 Z" fill="#ff8fa3"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="roll" id="rollBtn"><span class="dice">🎲</span> 메뉴 돌리기</button>
+    <button class="ghost" id="resetBtn" title="오늘부터 새로 2주를 시작하고 잠금도 모두 풀어요">📅 오늘부터 새로 시작</button>
+    <button class="ghost" id="muteBtn">🔊 소리 켜짐</button>
+    <span class="range" id="range"></span>
+  </div>
+
+  <div class="legend" id="legend"></div>
+  <div class="cal" id="cal"></div>
+
+  <div class="summary">
+    <h2>📊 이번 2주 구성</h2>
+    <div class="rows" id="sum"></div>
+    <p class="hint">
+      · 🔒 잠그면 다시 돌려도 그 메뉴는 그대로 남아요. 🔄는 그 날만 같은 종류 안에서 다시 뽑아요.<br>
+      · 같은 메뉴는 2주 동안 한 번만, 같은 종류나 같은 주재료(새우·소고기·고등어 등)는 이틀 연속으로 나오지 않아요.<br>
+      · 파스타는 한 번 나오면 최소 7일 뒤에 다시 나와요 (2주에 최대 2번).<br>
+      · 솥밥은 주말에, 샌드위치·죽은 토요일 점심에만 나와요. p.000은 책 페이지예요.
+    </p>
+  </div>
+</div>
+
+<script>
+/* ===================== 메뉴 데이터 ===================== */
+const CATS = {
+  bowl:  {label:'한 그릇', emoji:'🍚', color:'var(--c-bowl)'},
+  pot:   {label:'솥밥',   emoji:'🍲', color:'var(--c-pot)'},
+  pasta: {label:'파스타', emoji:'🍝', color:'var(--c-pasta)'},
+  tteok: {label:'떡볶이', emoji:'🌶️', color:'var(--c-tteok)'},
+  kimbap:{label:'김밥',   emoji:'🍙', color:'var(--c-kimbap)'},
+  porridge:{label:'죽',   emoji:'🥣', color:'var(--c-lunch)'},
+  sand:  {label:'샌드위치', emoji:'🥪', color:'var(--c-lunch)'},
+};
+const RAW = {
+  bowl:`020 애호박참치비빔밥|022 명란오이비빔밥|024 오이두부비빔밥|026 구운버섯두부덮밥|028 삼겹살콩나물비빔밥|030 오이고추비빔밥|032 아보카도새우비빔밥|034 느타리버섯전밥|036 배추나물덮밥|038 강된장덮밥|040 차돌깻잎덮밥|042 소고기두부덮밥|044 상추겉절이비빔밥|046 애호박새우덮밥|048 고등어덮밥|050 돼지소보로덮밥|052 참치전밥|054 닭곰탕|056 닭다리살덮밥|058 토마토카레|060 날치알밥|062 소고기마늘볶음밥|064 아스파라거스베이컨볶음밥|066 바질새우볶음밥|068 김볶음밥|070 오므밥`,
+  porridge:`072 차돌된장죽|074 새우미역죽|076 참치미역달걀죽|078 소고기채소죽`,
+  pot:`086 토마토카레새우솥밥|088 소고기미역솥밥|090 연어솥밥|092 차돌된장솥밥|094 명란솥밥|096 소고기콩나물솥밥|098 스테이크솥밥|100 고등어솥밥|102 가지솥밥|104 닭다리살솥밥`,
+  pasta:`112 원팬크림파스타|114 원팬참치파스타|116 원팬알리오올리오|118 원팬새우토마토파스타|120 원팬토마토파스타|122 고등어파스타|124 애호박새우파스타|126 소고기미역파스타|128 소고기대파파스타|130 마늘종파스타|132 카레파스타|134 달걀프라이파스타|136 보쌈쌈장파스타|138 가자미크림파스타|140 항정살된장파스타|142 양배추새우파스타|144 두부들기름파스타|146 불고기들기름파스타|148 낙지젓들기름파스타|150 참나물된장파스타|152 고사리파스타|154 참치마요파스타|156 봄나물파스타|158 장조림파스타|160 가지파스타|162 야키파스타|164 훈제오리파스타|166 김파스타|168 나폴리탄파스타|170 카르보나라`,
+  tteok:`176 들기름떡볶이|178 알리오올리오떡볶이|180 궁중떡볶이|182 간장떡볶이|184 짜장떡볶이|186 로제떡볶이|188 버섯크림떡볶이|190 애호박명란떡볶이`,
+  kimbap:`196 크래미오이김밥|198 멸치김밥|200 시금치달걀김밥|202 마늘종김밥|204 소불고기김밥|206 당근달걀김밥|208 돈가스김밥|210 스크램블드에그김밥|212 치킨텐더김밥|214 삼겹살김밥|216 애호박김밥|218 고등어김밥|220 후토마키`,
+  sand:`226 새우튀김샌드위치|228 참치오이샌드위치|230 감자샐러드샌드위치|232 에그마요샌드위치|234 리코타치즈샌드위치|236 후르츠산도|238 소불고기치즈샌드위치|240 바질에그샌드위치|242 떡갈비샌드위치`,
+};
+// 주재료 그룹 (이틀 연속 같은 그룹 금지) — 앞에 있는 규칙이 우선
+const INGR = [
+  ['새우',/새우/],['참치',/참치/],['고등어',/고등어/],['연어',/연어/],['가자미',/가자미/],
+  ['명란·알',/명란|날치알|낙지젓/],['멸치',/멸치/],['크래미',/크래미/],
+  ['소고기',/소고기|차돌|불고기|스테이크|떡갈비|장조림/],
+  ['돼지',/돼지|삼겹살|항정살|보쌈|돈가스|베이컨/],
+  ['닭·오리',/닭|치킨|오리/],
+  ['두부',/두부/],['달걀',/달걀|에그|오므/],['버섯',/버섯|느타리/],
+];
+function ingrOf(name){ for(const [g,re] of INGR) if(re.test(name)) return g; return null; }
+const MENUS = {};
+for(const [cat,txt] of Object.entries(RAW)){
+  MENUS[cat] = txt.split('|').map(s=>{ const [p,...n]=s.trim().split(' '); const name=n.join(' ');
+    return {id:cat+p, page:p, name, cat, ingr:ingrOf(name)}; });
+}
+const BY_ID = {}; Object.values(MENUS).flat().forEach(m=>BY_ID[m.id]=m);
+const LUNCH_POOL = [...MENUS.porridge, ...MENUS.sand];
+const DINNER_ALL = ['bowl','pot','pasta','tteok','kimbap'].flatMap(c=>MENUS[c]);
+
+/* ===================== 날짜 ===================== */
+const DAYS = 14, DOW = ['일','월','화','수','목','금','토'];
+const pad = n=>String(n).padStart(2,'0');
+const ymd = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+function todayStr(){ return ymd(new Date()); }
+function dateAt(start,i){ const [y,m,d]=start.split('-').map(Number); return new Date(y,m-1,d+i); }
+
+/* ===================== 생성 로직 ===================== */
+const rnd = n=>Math.floor(Math.random()*n);
+const shuffle = a=>{ for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];} return a; };
+// 7일 구성 템플릿 (솥밥 1개는 주말에 따로 배치)
+const TEMPLATES = [
+  ['bowl','bowl','bowl','pasta','tteok','kimbap'],
+  ['bowl','bowl','pasta','tteok','kimbap','kimbap'],
+  ['bowl','bowl','bowl','pasta','tteok','kimbap'],
+  ['bowl','bowl','pasta','tteok','tteok','kimbap'],
+];
+const PASTA_MIN_GAP = 7; // 파스타 간격: 6일 초과(= 7일 이상)
+
+// plan: {start, days:[{dinner:id, lunch:id|null}], locks:{"i-dinner":true}}
+function isWeekend(d){ const w=d.getDay(); return w===0||w===6; }
+
+function generateCats(start, fixed){ // fixed[i] = cat or undefined
+  for(let attempt=0; attempt<3000; attempt++){
+    const cats = fixed.slice();
+    let ok = true;
+    for(let c=0;c<DAYS;c+=7){
+      const idx = [...Array(Math.min(7,DAYS-c)).keys()].map(k=>k+c);
+      const pool = TEMPLATES[rnd(TEMPLATES.length)].slice();
+      pool.push('pot');
+      // 잠긴 날 카테고리는 풀에서 차감
+      idx.forEach(i=>{ if(cats[i]){ const k=pool.indexOf(cats[i]); if(k>=0) pool.splice(k,1); } });
+      // 솥밥은 주말 빈칸에
+      const pk = pool.indexOf('pot');
+      if(pk>=0){
+        const wk = idx.filter(i=>!cats[i] && isWeekend(dateAt(start,i)));
+        if(!wk.length){ ok=false; break; }
+        cats[wk[rnd(wk.length)]]='pot'; pool.splice(pk,1);
+      }
+      shuffle(pool);
+      idx.filter(i=>!cats[i]).forEach(i=>{ cats[i] = pool.pop() || 'bowl'; });
+    }
+    if(!ok) continue;
+    // 솥밥이 평일로 새는 일 없도록 + 이틀 연속 같은 종류 금지
+    let bad=false;
+    for(let i=0;i<DAYS;i++){
+      if(!fixed[i] && cats[i]==='pot' && !isWeekend(dateAt(start,i))) bad=true;
+      if(i>0 && cats[i]===cats[i-1]) bad=true;
+    }
+    const pastaDays = cats.map((c,i)=>c==='pasta'?i:-1).filter(i=>i>=0);
+    for(let k=1;k<pastaDays.length;k++) if(pastaDays[k]-pastaDays[k-1] < PASTA_MIN_GAP) bad=true;
+    if(!bad) return cats;
+  }
+  return null;
+}
+
+function pickDinners(cats, fixedIds){
+  for(let attempt=0; attempt<3000; attempt++){
+    const used = new Set(fixedIds.filter(Boolean));
+    const ids = fixedIds.slice(); let ok=true;
+    for(let i=0;i<DAYS;i++){
+      if(ids[i]) continue;
+      const prev = i>0 ? BY_ID[ids[i-1]] : null;
+      const next = i<DAYS-1 && ids[i+1] ? BY_ID[ids[i+1]] : null;
+      const cand = MENUS[cats[i]].filter(m=>!used.has(m.id)
+        && !(prev && m.ingr && prev.ingr===m.ingr)
+        && !(next && m.ingr && next.ingr===m.ingr));
+      if(!cand.length){ ok=false; break; }
+      const m = cand[rnd(cand.length)]; ids[i]=m.id; used.add(m.id);
+    }
+    if(ok) return ids;
+  }
+  return null;
+}
+
+function pickLunches(start, fixedLunch){
+  const used = new Set(fixedLunch.filter(Boolean));
+  const sats = [...Array(DAYS).keys()].filter(i=>dateAt(start,i).getDay()===6);
+  const out = Array(DAYS).fill(null);
+  // 죽/샌드위치를 번갈아 (첫 토요일은 랜덤)
+  let kind = Math.random()<0.5 ? 'porridge':'sand';
+  sats.forEach(i=>{
+    if(fixedLunch[i]){ out[i]=fixedLunch[i]; kind = BY_ID[fixedLunch[i]].cat==='sand'?'porridge':'sand'; return; }
+    let cand = MENUS[kind].filter(m=>!used.has(m.id));
+    if(!cand.length) cand = LUNCH_POOL.filter(m=>!used.has(m.id));
+    const m=cand[rnd(cand.length)]; out[i]=m.id; used.add(m.id);
+    kind = kind==='sand'?'porridge':'sand';
+  });
+  return out;
+}
+
+function generatePlan(prev){
+  const start = prev ? prev.start : todayStr();
+  const locks = prev ? prev.locks : {};
+  const fixedD = Array(DAYS).fill(undefined), fixedL = Array(DAYS).fill(undefined);
+  if(prev) for(let i=0;i<DAYS;i++){
+    if(locks[i+'-dinner']) fixedD[i]=prev.days[i].dinner;
+    if(locks[i+'-lunch'])  fixedL[i]=prev.days[i].lunch;
+  }
+  let dinners=null;
+  for(let t=0;t<50 && !dinners;t++){
+    const cats = generateCats(start, fixedD.map(id=>id?BY_ID[id].cat:undefined));
+    if(cats) dinners = pickDinners(cats, fixedD);
+  }
+  if(!dinners){ alert('잠긴 메뉴가 많아서 규칙대로 채우기 어려워요. 잠금을 조금 풀어주세요.'); return prev; }
+  const lunches = pickLunches(start, fixedL);
+  return {start, locks, days: dinners.map((d,i)=>({dinner:d, lunch:lunches[i]}))};
+}
+
+function rerollOne(plan, i, slot){
+  const used = new Set(plan.days.flatMap(d=>[d.dinner,d.lunch]).filter(Boolean));
+  const cur = BY_ID[plan.days[i][slot]];
+  let cand;
+  if(slot==='lunch'){
+    cand = MENUS[cur.cat].filter(m=>!used.has(m.id));
+  }else{
+    const prev = i>0 ? BY_ID[plan.days[i-1].dinner] : null;
+    const next = i<DAYS-1 ? BY_ID[plan.days[i+1].dinner] : null;
+    cand = MENUS[cur.cat].filter(m=>!used.has(m.id)
+      && !(prev&&m.ingr&&prev.ingr===m.ingr) && !(next&&m.ingr&&next.ingr===m.ingr));
+  }
+  if(!cand.length) return false;
+  plan.days[i][slot] = cand[rnd(cand.length)].id;
+  return true;
+}
+
+/* ===================== 저장 (이 기기 브라우저) ===================== */
+const KEY='siwoo-dinner-v1';
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)); }catch(e){ return null; } }
+function save(p){ try{ localStorage.setItem(KEY, JSON.stringify(p)); }catch(e){} }
+
+/* ===================== 효과음 ===================== */
+let actx=null, master=null, noiseBuf=null;
+let muted = (()=>{ try{ return localStorage.getItem('siwoo-dinner-mute')==='1'; }catch(e){ return false; } })();
+function ac(){
+  if(!actx){
+    actx = new (window.AudioContext||window.webkitAudioContext)();
+    master = actx.createGain(); master.gain.value = 0.9; master.connect(actx.destination);
+    noiseBuf = actx.createBuffer(1, actx.sampleRate*0.5, actx.sampleRate);
+    const d = noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  }
+  if(actx.state==='suspended') actx.resume();
+  return actx;
+}
+// 기본 음: 주파수 시작→끝으로 미끄러지는 짧은 소리
+function tone(f1, f2, dur, type='triangle', vol=0.1, delay=0){
+  if(muted) return; try{
+    const c=ac(), t=c.currentTime+delay, o=c.createOscillator(), g=c.createGain();
+    o.type=type; o.frequency.setValueAtTime(f1,t); o.frequency.exponentialRampToValueAtTime(Math.max(30,f2),t+dur);
+    g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t+dur+0.02);
+  }catch(e){}
+}
+// 잡음: 필터를 거친 짧은 '착/탁' 소리
+function noise(dur, freq, q=1, vol=0.2, delay=0, type='bandpass', sweepTo=null){
+  if(muted) return; try{
+    const c=ac(), t=c.currentTime+delay, src=c.createBufferSource(), f=c.createBiquadFilter(), g=c.createGain();
+    src.buffer=noiseBuf; f.type=type; f.frequency.setValueAtTime(freq,t); f.Q.value=q;
+    if(sweepTo) f.frequency.exponentialRampToValueAtTime(sweepTo,t+dur);
+    g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    src.connect(f); f.connect(g); g.connect(master); src.start(t); src.stop(t+dur+0.02);
+  }catch(e){}
+}
+const SFX = {
+  // 🎲 주사위: 손안에서 달그락 흔들다가 → 바닥에 데굴데굴 떨어지는 소리
+  dice(){
+    for(let k=0;k<7;k++){ const d=k*0.055+Math.random()*0.02; noise(0.04,2500+Math.random()*1500,4,0.35,d); }
+    [0.45,0.58,0.68,0.76,0.82,0.87].forEach((d,k)=>{
+      const v=0.5-k*0.06; noise(0.05,1200+Math.random()*600,6,v,d); tone(700+Math.random()*200,400,0.05,'square',v*0.12,d);
+    });
+  },
+  // 촤라라락 시작: 휘익
+  whoosh(){ noise(0.35,400,1.2,0.25,0,'bandpass',3000); },
+  // 돌아가는 중: 슬롯머신 릴 '따닥따닥'
+  tick(){ noise(0.025,3500,3,0.22); tone(1600+Math.random()*500,1200,0.025,'square',0.025); },
+  // 한 칸씩 멈출 때: 나무 '딱' + 점점 높아지는 '띵'
+  stop(k=0){
+    noise(0.04,1800,8,0.45); tone(950,600,0.06,'sine',0.25);
+    const base = 523*Math.pow(2,(k%15)/12);
+    tone(base,base,0.18,'triangle',0.12,0.03); tone(base*2,base*2,0.12,'sine',0.04,0.03);
+  },
+  // 다 채워졌을 때: 빠밤빠~ 팡파레
+  fanfare(){
+    [[523,0],[659,0.11],[784,0.22],[1047,0.33],[784,0.5],[1047,0.6]].forEach(([f,d],k)=>
+      tone(f,f,k===5?0.5:0.14,'triangle',0.13,d+0.05));
+    noise(0.5,6000,0.7,0.12,0.6,'highpass');
+  },
+  lock(){ noise(0.03,2200,6,0.4); tone(700,1100,0.07,'square',0.06,0.02); },
+  unlock(){ noise(0.03,2200,6,0.4); tone(1100,700,0.07,'square',0.06,0.02); },
+  click(){ tone(900,700,0.04,'sine',0.12); },
+  // 카피바라 '뀨잉~'
+  squeak(){ tone(700,1400,0.09,'sine',0.18); tone(1300,900,0.14,'sine',0.15,0.1); },
+};
+function setMute(v){ muted=v; try{ localStorage.setItem('siwoo-dinner-mute', v?'1':'0'); }catch(e){}
+  document.getElementById('muteBtn').textContent = v ? '🔇 소리 꺼짐' : '🔊 소리 켜짐'; }
+
+
+/* ===================== 엄마 표정 ===================== */
+const MOM_LINES = {
+  idle:  ['오늘 저녁 뭐 하지…? 🤔','주사위한테 맡겨볼까? 🎲','장 보기 전에 메뉴부터 정하자!'],
+  hope:  ['제발… 쉬운 거 나와라 🙏','김밥 말고 김밥 말고…🙏','두근두근… 간단한 거!! 🙏'],
+  shock: ['헉… 이걸 2주 동안 다…?! 💦','으악… 장보러 가야겠다 💦','아이고… 손목아 버텨줘 💦'],
+  shock1:['헉… 또 이거?! 💦','으… 이것도 만만치 않네 💦'],
+};
+
+const CAPY_LINES = {
+  idle:  ['…평온 😌','소세지 꿈 꾸는 중… 🌭','유자 따뜻해~ 🍊','(멍~) 소세지…'],
+  hope:  ['소세지! 소세지! 🌭','소세지 나와라!! 🌭','꾸르륵… 소세지 먹고 싶다 🤤','소세지 반찬 주세요!'],
+  chill: ['난 소세지만 있으면 돼~ 🌭','냠냠… 소세지 최고 😋','엄마 최고! 소세지 하나 더 💕','메뉴 상관없어~ 소세지 구워줘 🌭'],
+  poke:  ['뀨? 소세지 있어?','뀨잉~ 🌭','(꿈틀) 소세지 냄새…','간지러워 😆','소세지 숨겨둔 거 다 알아!'],
+};
+let capyTimer=null;
+function setCapy(state, lineKey){
+  const c=document.getElementById('capy'), b=document.getElementById('cbubble');
+  c.className='capy '+state;
+  const arr=CAPY_LINES[lineKey||state]; b.textContent=arr[rnd(arr.length)];
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+}
+// 카피바라 콕 찌르기: 뀨~ 소리 + 말랑하게 찌그러짐
+function pokeCapy(){
+  const c=document.getElementById('capy'); const cur=c.className.replace('capy','').replace('poke','').trim()||'idle';
+  c.classList.remove('poke'); void c.offsetWidth; c.classList.add('poke');
+  setTimeout(()=>c.classList.remove('poke'),400);
+  const b=document.getElementById('cbubble'); const arr=CAPY_LINES.poke; b.textContent=arr[rnd(arr.length)];
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+  SFX.squeak();
+  clearTimeout(capyTimer); capyTimer=setTimeout(()=>{ if(!spinning) setCapy(cur); }, 1800);
+}
+let momTimer=null;
+function setMom(state, lineKey){
+  const m=document.getElementById('mom'), b=document.getElementById('bubble');
+  m.className='mom '+state;
+  const arr=MOM_LINES[lineKey||state]; b.textContent=arr[rnd(arr.length)];
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+  clearTimeout(momTimer); clearTimeout(capyTimer);
+  setCapy(state==='shock' ? 'chill' : state);
+  if(state==='shock') momTimer=setTimeout(()=>setMom('idle'), 6000);
+}
+
+/* ===================== 화면 ===================== */
+let plan = load();
+const cal = document.getElementById('cal');
+let spinning = false;
+
+function slotHTML(i, slot, id){
+  const m = BY_ID[id]; const c = CATS[m.cat];
+  const locked = plan.locks[i+'-'+slot];
+  return `<div class="slot ${slot==='lunch'?'lunch':''} ${locked?'locked':''}" id="s-${i}-${slot}">
+    ${slot==='lunch'?'<span class="label">☀️ 토요일 점심</span>':''}
+    <span class="cat" style="background:${c.color}">${c.emoji} ${c.label}</span>
+    <div class="name">${m.name}</div>
+    <div class="meta"><span>p.${m.page}</span>
+      <span class="btns">
+        <button data-act="lock" data-i="${i}" data-s="${slot}" class="${locked?'on':''}" title="잠금">${locked?'🔒':'🔓'}</button>
+        <button data-act="one" data-i="${i}" data-s="${slot}" title="이 날만 다시">🔄</button>
+      </span></div>
+  </div>`;
+}
+
+function render(){
+  const start = plan.start, today = todayStr();
+  const first = dateAt(start,0), lead = first.getDay();
+  const last = dateAt(start,DAYS-1);
+  document.getElementById('range').textContent =
+    `📆 ${first.getMonth()+1}/${first.getDate()}(${DOW[first.getDay()]}) ~ ${last.getMonth()+1}/${last.getDate()}(${DOW[last.getDay()]})`;
+  let h = DOW.map((d,k)=>`<div class="dow ${k===0?'sun':k===6?'sat':''}">${d}</div>`).join('');
+  for(let k=0;k<lead;k++) h+='<div class="cell empty"></div>';
+  plan.days.forEach((d,i)=>{
+    const dt = dateAt(start,i), w = dt.getDay();
+    const cls = w===0?'sun':w===6?'sat':'';
+    h += `<div class="cell ${w===0||w===6?'weekend':''} ${ymd(dt)===today?'today':''}">
+      <div class="date ${cls}"><span><span class="d">${dt.getMonth()+1}/${dt.getDate()}</span> ${DOW[w]}</span>
+        ${ymd(dt)===today?'<span class="tag-today">오늘</span>':''}</div>
+      <div class="slots">
+        ${d.lunch?slotHTML(i,'lunch',d.lunch):''}
+        ${slotHTML(i,'dinner',d.dinner)}
+      </div></div>`;
+  });
+  const tail = (lead+DAYS)%7; if(tail) for(let k=tail;k<7;k++) h+='<div class="cell empty"></div>';
+  cal.innerHTML = h;
+  renderSummary(); renderLegend();
+}
+
+function renderSummary(){
+  const cnt={}; plan.days.forEach(d=>{ [d.dinner,d.lunch].filter(Boolean).forEach(id=>{const c=BY_ID[id].cat;cnt[c]=(cnt[c]||0)+1;}); });
+  document.getElementById('sum').innerHTML = Object.keys(CATS).filter(c=>cnt[c]).map(c=>
+    `<span class="chip"><i style="background:${CATS[c].color}"></i>${CATS[c].emoji} ${CATS[c].label} <b>${cnt[c]}</b></span>`).join('');
+}
+function renderLegend(){
+  document.getElementById('legend').innerHTML = ['bowl','pot','pasta','tteok','kimbap'].map(c=>
+    `<span class="chip"><i style="background:${CATS[c].color}"></i>${CATS[c].emoji} ${CATS[c].label} ${MENUS[c].length}</span>`).join('')
+    + `<span class="chip"><i style="background:var(--c-lunch)"></i>☀️ 토요일 점심: 죽·샌드위치</span>`;
+}
+
+// 순차 정지를 실제로 보여주기 위해: 멈춘 칸은 그 시점에 결과를 미리 보여줌
+function animateRoll(newPlan, targets){
+  plan = newPlan; save(plan);
+  spinning = true; SFX.whoosh();
+  const btn = document.getElementById('rollBtn'); btn.disabled = true; btn.classList.add('spinning');
+  const states = targets.map(({i,slot})=>{
+    const el = document.getElementById(`s-${i}-${slot}`); el.classList.add('spin');
+    return {i,slot,el,nameEl:el.querySelector('.name'),pool:slot==='lunch'?LUNCH_POOL:DINNER_ALL,stopped:false};
+  });
+  const iv = setInterval(()=>{ let any=false;
+    states.forEach(o=>{ if(!o.stopped){ any=true; o.nameEl.textContent=o.pool[rnd(o.pool.length)].name; } });
+    if(any) SFX.tick(); }, 70);
+  const base = 800, gap = targets.length>2 ? 170 : 0;
+  states.forEach((o,k)=>setTimeout(()=>{
+    o.stopped = true;
+    const tmp = document.createElement('div'); tmp.innerHTML = slotHTML(o.i,o.slot,plan.days[o.i][o.slot]);
+    const nu = tmp.firstElementChild; nu.classList.add('pop'); o.el.replaceWith(nu); o.el = nu;
+    SFX.stop(k);
+  }, base + k*gap));
+  setTimeout(()=>{
+    clearInterval(iv); render(); if(targets.length>2) SFX.fanfare();
+    setMom('shock', targets.length>2 ? 'shock' : 'shock1');
+    spinning=false; btn.disabled=false; btn.classList.remove('spinning');
+  }, base + (states.length-1)*gap + 200);
+}
+
+function rollAll(){
+  if(spinning) return;
+  const np = generatePlan(plan); if(np===plan) return;
+  const targets=[];
+  np.days.forEach((d,i)=>{
+    if(d.lunch && !np.locks[i+'-lunch']) targets.push({i,slot:'lunch'});
+    if(!np.locks[i+'-dinner']) targets.push({i,slot:'dinner'});
+  });
+  // 처음 그리는 경우 화면 골격 먼저
+  if(!plan){ plan=np; render(); }
+  else { // 새 계획 구조로 먼저 렌더(토요일 점심 칸 유지), 돌리는 칸은 애니메이션
+    const keep = plan; plan = np; render(); plan = keep;
+  }
+  rollDiceThen(()=>animateRoll(np, targets));
+}
+
+// 주사위 굴리는 소리·동작을 먼저 보여주고 촤라락 시작
+function rollDiceThen(fn){
+  const btn=document.getElementById('rollBtn'); btn.disabled=true; btn.classList.add('spinning');
+  spinning=true; SFX.dice(); setMom('hope'); setTimeout(()=>{ spinning=false; fn(); }, 650);
+}
+
+cal.addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b || spinning) return;
+  const i = +b.dataset.i, s = b.dataset.s, key = i+'-'+s;
+  if(b.dataset.act==='lock'){
+    if(plan.locks[key]) delete plan.locks[key]; else plan.locks[key]=true;
+    save(plan); render(); plan.locks[key]?SFX.lock():SFX.unlock();
+  }else if(b.dataset.act==='one'){
+    if(plan.locks[key]) return;
+    const np = JSON.parse(JSON.stringify(plan));
+    if(!rerollOne(np,i,s)){ alert('같은 종류에서 더 고를 메뉴가 없어요!'); return; }
+    rollDiceThen(()=>animateRoll(np, [{i,slot:s}]));
+  }
+});
+document.getElementById('rollBtn').onclick = rollAll;
+document.getElementById('capyWrap').onclick = pokeCapy;
+document.getElementById('muteBtn').onclick = ()=>{ setMute(!muted); if(!muted) SFX.click(); };
+setMute(muted);
+document.getElementById('resetBtn').onclick = ()=>{
+  if(spinning) return;
+  if(plan && !confirm('오늘부터 새 2주로 다시 시작할까요? 잠금도 모두 풀려요.')) return;
+  plan = null; const np = generatePlan(null); plan = np; render();
+  const targets=[]; np.days.forEach((d,i)=>{ if(d.lunch) targets.push({i,slot:'lunch'}); targets.push({i,slot:'dinner'}); });
+  rollDiceThen(()=>animateRoll(np, targets));
+};
+
+// 시작: 저장된 계획이 없거나, 기간이 이미 다 지났으면 오늘부터 새로
+(function init(){
+  const expired = plan && ymd(dateAt(plan.start,DAYS-1)) < todayStr();
+  if(!plan || !plan.days || plan.days.length!==DAYS || expired){ plan = generatePlan(null); save(plan); }
+  render();
+})();
+</script>
+</body>
+</html>
